@@ -36,6 +36,7 @@ import (
 	_ "github.com/cayleygraph/cayley/graph/bolt"
 	_ "github.com/cayleygraph/cayley/graph/bolt2"
 	_ "github.com/cayleygraph/cayley/graph/kv/btree"
+	_ "github.com/cayleygraph/cayley/graph/kv/dynamodb"
 	_ "github.com/cayleygraph/cayley/graph/leveldb"
 	_ "github.com/cayleygraph/cayley/graph/memstore"
 	_ "github.com/cayleygraph/cayley/graph/mongo"
@@ -462,6 +463,14 @@ func prepare(t testing.TB) *graph.Handle {
 		cfg.DatabasePath = "postgres://localhost/cayley_test"
 		cfg.DatabaseOptions = map[string]interface{}{
 			"flavor": *sqlFlavor,
+		}
+		remote = true
+	case "dynamodb-kv":
+		cfg.DatabasePath = "cayley-integration"
+		cfg.DatabaseOptions = map[string]interface{}{
+			"access_key": os.Getenv("AWS_ACCESS_KEY"),
+			"secret_key": os.Getenv("AWS_SECRET_KEY"),
+			"region":     os.Getenv("AWS_REGION"),
 		}
 		remote = true
 	default:
