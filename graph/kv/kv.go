@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/cayleygraph/cayley/graph/shape"
+	"github.com/cayleygraph/cayley/quad"
 )
 
 var (
@@ -223,3 +225,25 @@ func (b *flatBucket) Scan(pref []byte) KVIterator {
 	pref = b.key(pref)
 	return &prefIter{KVIterator: b.tx.Scan(pref), trim: b.pref}
 }
+
+var _ KVIterator = (*kvLookup)(nil)
+
+type kvLookup struct {
+	k, v []byte
+	err  error
+	done bool
+}
+
+func (it *kvLookup) Next(ctx context.Context) bool {
+	done := it.done
+	it.done = true
+	return !done && it.err == nil && it.v != nil
+}
+func (it *kvLookup) Err() error { return it.err }
+func (it *kvLookup) Close() error {
+	it.k, it.v = nil, nil
+	it.done = true
+	return it.err
+}
+func (it *kvLookup) Key() []byte { return it.k }
+func (it *kvLookup) Val() []byte { return it.v }

@@ -21,6 +21,7 @@ import (
 	"github.com/cayleygraph/cayley/graph"
 	"github.com/cayleygraph/cayley/graph/iterator"
 	"github.com/cayleygraph/cayley/graph/proto"
+	"github.com/cayleygraph/cayley/quad"
 )
 
 type QuadIterator struct {
@@ -30,6 +31,7 @@ type QuadIterator struct {
 	ind     QuadIndex
 	horizon int64
 	vals    []uint64
+	save    map[quad.Direction][]string
 	size    int64
 
 	tx   BucketTx
@@ -46,13 +48,14 @@ type QuadIterator struct {
 
 var _ graph.Iterator = &QuadIterator{}
 
-func NewQuadIterator(qs *QuadStore, ind QuadIndex, vals []uint64) *QuadIterator {
+func NewQuadIterator(qs *QuadStore, ind QuadIndex, vals []uint64, save map[quad.Direction][]string) *QuadIterator {
 	return &QuadIterator{
 		qs:      qs,
 		ind:     ind,
 		horizon: qs.horizon(),
 		uid:     iterator.NextUID(),
 		vals:    vals,
+		save:    save,
 		size:    -1,
 	}
 }
@@ -78,10 +81,31 @@ func (it *QuadIterator) Tagger() *graph.Tagger {
 
 func (it *QuadIterator) TagResults(dst map[string]graph.Value) {
 	it.tags.TagResult(dst, it.Result())
+	if it.prim == nil {
+		return
+	}
+	for dir, tags := range it.save {
+		v := it.prim.GetDirection(dir)
+		for _, tag := range tags {
+			dst[tag] = Int64Value(v)
+		}
+	}
+}
+
+func (it *QuadIterator) checkResult(p *proto.Primitive) bool {
+	if p == nil || p.Deleted {
+		return false
+	}
+	for dir := range it.save {
+		if v := p.GetDirection(dir); v == 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func (it *QuadIterator) Clone() graph.Iterator {
-	out := NewQuadIterator(it.qs, it.ind, it.vals)
+	out := NewQuadIterator(it.qs, it.ind, it.vals, it.save)
 	out.tags.CopyFrom(it)
 	out.ids = it.ids
 	out.horizon = it.horizon
@@ -170,7 +194,7 @@ func (it *QuadIterator) Next() bool {
 		}
 		for ; len(it.buf) > 0; it.buf, it.off = it.buf[1:], it.off+1 {
 			p := it.buf[0]
-			if p == nil || p.Deleted {
+			if !it.checkResult(p) {
 				continue
 			}
 			it.prim = p
@@ -194,6 +218,10 @@ func (it *QuadIterator) Contains(v graph.Value) bool {
 			return false
 		}
 	}
+	if !it.checkResult(p) {
+		return false
+	}
+	it.prim = p
 	return true
 }
 

@@ -162,6 +162,13 @@ func (qs *QuadStore) Size() int64 {
 	return sz
 }
 
+func (qs *QuadStore) getIndexes() []QuadIndex {
+	qs.indexes.RLock()
+	all := qs.indexes.all
+	qs.indexes.RUnlock()
+	return all
+}
+
 func (qs *QuadStore) Close() error {
 	err := Update(qs.db, func(tx BucketTx) error {
 		return qs.writeHorizonAndSize(tx, -1, -1)

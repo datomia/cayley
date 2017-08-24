@@ -34,7 +34,7 @@ func (qs *QuadStore) QuadIterator(dir quad.Direction, v graph.Value) graph.Itera
 	qs.indexes.RUnlock()
 	for _, ind := range all {
 		if len(ind.Dirs) == 1 && ind.Dirs[0] == dir {
-			return NewQuadIterator(qs, ind, []uint64{uint64(vi)})
+			return NewQuadIterator(qs, ind, []uint64{uint64(vi)}, nil)
 		}
 	}
 	return NewAllIterator(false, qs, &constraint{

@@ -44,6 +44,7 @@ var (
 	DefaultQuadIndexes = []QuadIndex{
 		{Dirs: []quad.Direction{quad.Subject}},
 		{Dirs: []quad.Direction{quad.Object}},
+		{Dirs: []quad.Direction{quad.Subject, quad.Predicate, quad.Object}},
 	}
 )
 
