@@ -193,7 +193,10 @@ func labelContextMorphism(tags []string, via ...interface{}) morphism {
 	if len(via) == 0 {
 		path = nil
 	} else {
-		path = shape.Save{From: buildVia(via...), Tags: tags}
+		path = buildVia(via...)
+		if len(tags) != 0 {
+			path = shape.Save{From: path, Tags: tags}
+		}
 	}
 	return morphism{
 		Name: "label_context",
